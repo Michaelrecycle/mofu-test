@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Pages Repository</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        a {
+            color: #0366d6;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>Site Pages</h1>
+    <div id="sitemap">
+        <p>Loading sitemap...</p>
+    </div>
+
+    <script>
+        // Function to get and display site pages
+        async function loadSitemap() {
+            try {
+                const response = await fetch('sitemap.json');
+                if (!response.ok) {
+                    throw new Error('Sitemap not found');
+                }
+                
+                const sitemap = await response.json();
+                const sitemapDiv = document.getElementById('sitemap');
+                
+                if (sitemap.pages && sitemap.pages.length > 0) {
+                    const ul = document.createElement('ul');
+                    
+                    sitemap.pages.forEach(page => {
+                        const li = document.createElement('li');
+                        const a = document.createElement('a');
+                        a.href = page.url;
+                        a.textContent = page.title || page.url;
+                        
+                        if (page.description) {
+                            a.title = page.description;
+                        }
+                        
+                        li.appendChild(a);
+                        ul.appendChild(li);
+                    });
+                    
+                    sitemapDiv.innerHTML = '';
+                    sitemapDiv.appendChild(ul);
+                } else {
+                    sitemapDiv.innerHTML = '<p>No pages available yet.</p>';
+                }
+            } catch (error) {
+                document.getElementById('sitemap').innerHTML = '<p>No pages available yet.</p>';
+            }
+        }
+        
+        // Load sitemap when page loads
+        window.addEventListener('DOMContentLoaded', loadSitemap);
+    </script>
+</body>
+</html> 

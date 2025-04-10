@@ -1,0 +1,109 @@
+name: Update Sitemap
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'pages/**.html'  # Trigger when HTML files are added/modified in the pages directory
+
+jobs:
+  update-sitemap:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Update Sitemap
+        run: |
+          # Create sitemap updater script
+          cat > update-sitemap.js << 'EOF'
+          const fs = require('fs');
+          const path = require('path');
+
+          // Function to get page title from HTML file
+          function getPageTitle(htmlContent) {
+            const titleMatch = htmlContent.match(/<title>(.*?)<\/title>/);
+            return titleMatch ? titleMatch[1] : '';
+          }
+
+          // Get all HTML files in the pages directory
+          const pagesDir = path.join(__dirname, 'pages');
+          const sitemapPath = path.join(__dirname, 'sitemap.json');
+          
+          // Initialize sitemap structure
+          let sitemap = { pages: [] };
+          
+          // Add index page
+          sitemap.pages.push({
+            title: 'Home',
+            url: 'index.html',
+            description: 'Homepage with sitemap'
+          });
+          
+          // Read existing sitemap if it exists
+          if (fs.existsSync(sitemapPath)) {
+            try {
+              const existingContent = fs.readFileSync(sitemapPath, 'utf8');
+              const existingSitemap = JSON.parse(existingContent);
+              
+              // Keep the index page from existing sitemap if it exists
+              const indexPage = existingSitemap.pages.find(page => page.url === 'index.html');
+              if (indexPage) {
+                sitemap.pages = [indexPage];
+              }
+            } catch (err) {
+              console.error('Error reading existing sitemap:', err);
+            }
+          }
+          
+          if (fs.existsSync(pagesDir)) {
+            // Read all HTML files in the pages directory
+            const files = fs.readdirSync(pagesDir);
+            
+            files.forEach(file => {
+              if (path.extname(file) === '.html') {
+                const filePath = path.join(pagesDir, file);
+                const fileContent = fs.readFileSync(filePath, 'utf8');
+                const title = getPageTitle(fileContent);
+                
+                // Check if page already exists in sitemap
+                const pageIndex = sitemap.pages.findIndex(page => page.url === `pages/${file}`);
+                
+                if (pageIndex !== -1) {
+                  // Update existing page title if changed
+                  if (title && sitemap.pages[pageIndex].title !== title) {
+                    sitemap.pages[pageIndex].title = title;
+                  }
+                } else {
+                  // Add new page
+                  sitemap.pages.push({
+                    title: title || file,
+                    url: `pages/${file}`,
+                    description: ''
+                  });
+                }
+              }
+            });
+          }
+          
+          // Save updated sitemap
+          fs.writeFileSync(sitemapPath, JSON.stringify(sitemap, null, 2));
+          console.log('Sitemap updated successfully!');
+          EOF
+          
+          # Run the script
+          node update-sitemap.js
+
+      - name: Commit changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add sitemap.json
+          git diff --staged --quiet || git commit -m "Update sitemap.json"
+          git push 

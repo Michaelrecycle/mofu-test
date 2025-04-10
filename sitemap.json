@@ -1,0 +1,14 @@
+{
+  "pages": [
+    {
+      "title": "Home",
+      "url": "index.html",
+      "description": "Homepage with sitemap"
+    },
+    {
+      "title": "Sample Page",
+      "url": "pages/sample.html",
+      "description": "A sample page to demonstrate the structure"
+    }
+  ]
+} 
